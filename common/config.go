@@ -11,9 +11,58 @@ import (
 
 const CONFIG_FILE_NAME string = ".todor_cfg.json"
 
+type DefaultIgnoreOptions string
+type UseGitIgnoreOptions int
+
+const (
+	Git         DefaultIgnoreOptions = ".git"
+	GitIgnore   DefaultIgnoreOptions = ".gitignore"
+	NodeModules DefaultIgnoreOptions = "node_modules"
+	Next        DefaultIgnoreOptions = ".next"
+
+	// Fucking go I swear this is your biggest hindrance
+	InvalidUseGitIgnore UseGitIgnoreOptions = 0
+	UseGitIgnore        UseGitIgnoreOptions = 1
+	DoNotUseGitIgnore   UseGitIgnoreOptions = 2
+)
+
 type ConfigOptions struct {
 	Ignore           []string
+	UseGitIgnore     UseGitIgnoreOptions
 	DefaultOutputDir string
+}
+
+// Sets defaults for outdated configuration files and saves them if necessary
+func (cfg *ConfigOptions) setDefaults() {
+	must_save := false
+
+	if cfg.Ignore == nil {
+		must_save = true
+		cfg.Ignore = []string{string(Git), string(GitIgnore), string(Next), string(NodeModules)}
+	}
+	if cfg.DefaultOutputDir == "" {
+		must_save = true
+		cfg.DefaultOutputDir = "."
+	}
+	if cfg.UseGitIgnore == InvalidUseGitIgnore {
+		must_save = true
+		cfg.UseGitIgnore = UseGitIgnore
+	}
+
+	if must_save {
+		fmt.Println("Updating config file to new version")
+		cfg.saveConfig()
+	}
+}
+
+func DefaultConfig() ConfigOptions {
+	defaultConfig := ConfigOptions{
+		Ignore:           []string{string(Git), string(GitIgnore), string(Next), string(NodeModules)},
+		UseGitIgnore:     UseGitIgnore,
+		DefaultOutputDir: ".",
+	}
+
+	return defaultConfig
 }
 
 func getConfigFilePath() (string, error) {
@@ -54,16 +103,9 @@ func LoadConfig() (ConfigOptions, error) {
 		return ConfigOptions{}, err
 	}
 
+	cfg.setDefaults()
+
 	return cfg, nil
-}
-
-func DefaultConfig() ConfigOptions {
-	defaultConfig := ConfigOptions{
-		Ignore:           []string{".git", "node_modules", ".next"},
-		DefaultOutputDir: ".",
-	}
-
-	return defaultConfig
 }
 
 func (config *ConfigOptions) saveConfig() error {

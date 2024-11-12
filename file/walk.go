@@ -24,15 +24,60 @@ func (parser *Parser) WalkDir(input_path string) error {
 		return err
 	}
 
+	ignore_list := parser.Cfg.Ignore
+	// Find .gitgnore if UseGitIgnore from the config file is correct -- extract into ignore files
+	if parser.Cfg.UseGitIgnore == common.UseGitIgnore {
+		filepath.WalkDir(full_path, func(path string, d os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+
+			if d.Name() == string(common.GitIgnore) {
+				file, err := os.OpenFile(path, os.O_RDONLY, fs.FileMode(common.DEFAULT_FILE_PERMISSIONS))
+				if err != nil {
+					return err
+				}
+
+				scanner := bufio.NewScanner(file)
+				buffer := make([]byte, 0, 64*1024)
+				scanner.Buffer(buffer, 1024*1024)
+
+				for scanner.Scan() {
+					line := scanner.Text()
+
+					// Ignore comments
+					if strings.Contains(line, "#") {
+						continue
+					}
+
+					ignore_list = append(ignore_list, strings.Replace(line, "*", "", -1))
+				}
+
+				file.Close()
+				fmt.Println(ignore_list)
+			}
+
+			return nil
+		})
+	}
+
 	if input.IsDir() {
 		err = filepath.WalkDir(full_path, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
 
-			if !d.IsDir() {
-				if err = parser.readFile(path); err != nil {
-					return err
+			marked_ignore := false
+			for _, ignore := range ignore_list {
+				if strings.Contains(path, ignore) {
+					marked_ignore = true
+					break
+				}
+			}
+
+			if !d.IsDir() && !marked_ignore {
+				if e := parser.readFile(path); e != nil {
+					return e
 				}
 			}
 
