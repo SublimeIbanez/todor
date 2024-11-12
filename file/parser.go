@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -65,14 +66,16 @@ func NewParser(output_path string) (*Parser, error) {
 		Context:    context,
 		Cancel:     cancel,
 	}
-	parser.init()
+	waiting := parser.init()
+	parser.WaitGroup.Add(waiting)
 
 	return &parser, nil
 }
 
-func (parser *Parser) init() {
+func (parser *Parser) init() int {
 	go parser.handleInput()
 	go parser.handleOutput()
+	return 2
 }
 
 // TODO: finish this
@@ -84,7 +87,7 @@ func (parser *Parser) handleInput() {
 			return
 
 		default:
-			fmt.Println(input)
+			parser.Output <- fmt.Sprintf("[%s](%s)\n- %s\n\n", input.RelativePath, input.RelativePath, strings.Join(input.ToDo, "\n- "))
 		}
 	}
 }
@@ -98,7 +101,8 @@ func (parser *Parser) handleOutput() {
 			return
 
 		default:
-			fmt.Println(output)
+			output_data := []byte(output)
+			parser.OutputFile.Write(output_data)
 		}
 	}
 }

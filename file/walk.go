@@ -55,14 +55,17 @@ func (parser *Parser) ReadFile(path string) error {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
+	todo := ToDo{RelativePath: path}
+	line_number := 1
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.Contains(line, "TODO") {
-			parser.Input <- ToDo{
-				RelativePath: path,
-				ToDo:         line,
-			}
+		if strings.Contains(line, "TODO:") {
+			todo.ToDo = append(todo.ToDo, fmt.Sprintf("Line %d: %s", line_number, strings.TrimSpace(line)))
 		}
+		line_number += 1
+	}
+	if len(todo.ToDo) > 0 {
+		parser.Input <- todo
 	}
 
 	return scanner.Err()

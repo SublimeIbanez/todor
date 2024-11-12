@@ -2,5 +2,5 @@ package file
 
 type ToDo struct {
 	RelativePath string
-	ToDo         string
+	ToDo         []string
 }
