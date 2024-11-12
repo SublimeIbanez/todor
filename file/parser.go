@@ -3,9 +3,9 @@ package file
 import (
 	"context"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
 const DEFAULT_OUTPUT_FILE_NAME string = "todos.md"
@@ -16,29 +16,42 @@ type Parser struct {
 	OutputFile *os.File
 	Context    context.Context
 	Cancel     context.CancelFunc
+	WaitGroup  sync.WaitGroup
 }
 
-func NewParser(output_path string) *Parser {
+func NewParser(output_path string) (*Parser, error) {
 	var output_file *os.File
 	var err error
 
-	// Handle the output file
-	if output_path.IsDir() {
-		f, err := filepath.Abs(output_path.Name())
-		if err != nil {
-			fmt.Println("Could not generate output absolute path:", err)
-			os.Exit(2)
-		}
-
-		f = filepath.Join(f, DEFAULT_OUTPUT_FILE_NAME)
-
-		output_file, err = os.OpenFile(f, os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(3)
-		}
+	if len(output_path) == 0 {
+		output_path = DEFAULT_OUTPUT_FILE_NAME
 	}
 
+	path_info, err := os.Stat(output_path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			output_file, err = os.OpenFile(output_path, os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create output file: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("failed to stat output path: %w", err)
+		}
+	} else if path_info.IsDir() {
+		// Output path is a directory; create the default file inside it
+		output_file_path := filepath.Join(output_path, DEFAULT_OUTPUT_FILE_NAME)
+		output_file, err = os.OpenFile(output_file_path, os.O_CREATE|os.O_WRONLY, 0644)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to open output file: %w", err)
+		}
+	} else {
+		// Output path is a file
+		output_file, err = os.OpenFile(output_path, os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open output file: %w", err)
+		}
+	}
 	fmt.Println(output_path)
 
 	// Create the context
@@ -54,7 +67,7 @@ func NewParser(output_path string) *Parser {
 	}
 	parser.init()
 
-	return &parser
+	return &parser, nil
 }
 
 func (parser *Parser) init() {
@@ -62,7 +75,9 @@ func (parser *Parser) init() {
 	go parser.handleOutput()
 }
 
+// TODO: finish this
 func (parser *Parser) handleInput() {
+	defer parser.WaitGroup.Done()
 	for input := range parser.Input {
 		select {
 		case <-parser.Context.Done():
@@ -74,7 +89,9 @@ func (parser *Parser) handleInput() {
 	}
 }
 
+// TODO: finish this
 func (parser *Parser) handleOutput() {
+	defer parser.WaitGroup.Done()
 	for output := range parser.Output {
 		select {
 		case <-parser.Context.Done():
@@ -91,5 +108,7 @@ func (parser *Parser) Shutdown() {
 
 	close(parser.Input)
 	close(parser.Output)
-	defer parser.OutputFile.Close()
+	if parser.OutputFile != nil {
+		parser.OutputFile.Close()
+	}
 }

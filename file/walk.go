@@ -5,28 +5,42 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Recursively walk through the directory and read through all items
 func (parser *Parser) WalkDir(input_path string) error {
-	input, _ := os.Stat(input_path)
-	// convert the input_path to a []DirEntry because there's no simple function that I know of to do so
-	if input.IsDir() {
-		full_path, err := filepath.Abs(input_path)
-		items, err := os.ReadDir(full_path)
-		if err != nil {
-			return err
-		}
+	defer parser.Context.Done()
+	input, err := os.Stat(input_path)
+	if err != nil {
+		return err
+	}
 
-		for _, item := range items {
-			entry, err := item.Info()
+	full_path, err := filepath.Abs(input_path)
+	if err != nil {
+		return err
+	}
+
+	if input.IsDir() {
+		err = filepath.WalkDir(full_path, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
-			err = parser.WalkDir(entry.Name())
-			if err != nil {
-				return err
+
+			if !d.IsDir() {
+				if err = parser.ReadFile(path); err != nil {
+					return err
+				}
 			}
+
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("error walking the directory: %v", err)
+		}
+	} else {
+		if err := parser.ReadFile(full_path); err != nil {
+			return err
 		}
 	}
 
@@ -34,7 +48,7 @@ func (parser *Parser) WalkDir(input_path string) error {
 }
 
 func (parser *Parser) ReadFile(path string) error {
-	file, err := os.Open(path)
+	file, err := os.OpenFile(path, os.O_RDONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -42,7 +56,13 @@ func (parser *Parser) ReadFile(path string) error {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		fmt.Println(scanner.Text())
+		line := scanner.Text()
+		if strings.Contains(line, "TODO") {
+			parser.Input <- ToDo{
+				RelativePath: path,
+				ToDo:         line,
+			}
+		}
 	}
 
 	return scanner.Err()

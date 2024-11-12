@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 
 	"github.com/SublimeIbanez/todor/file"
@@ -26,28 +25,17 @@ Example:
     todor -p src`,
 	Args: cobra.RangeArgs(0, 2),
 	Run: func(cmd *cobra.Command, args []string) {
-
-		// Check the path
-		input, err := os.Stat(input_path)
-		if err != nil {
-			fmt.Println("Could not verify input path:", err)
-			os.Exit(1)
-		}
-		output, err := os.Stat(input_path)
-		if err != nil {
-			fmt.Println("Could not verify output path:", err)
-			os.Exit(1)
-		}
-
-		fmt.Println("Input", input, " -- Output", output)
-
 		// Create the parser
-		parser := file.NewParser(fs.FileInfoToDirEntry(output))
+		parser, err := file.NewParser(output_path)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 		defer parser.Shutdown()
 
 		err = parser.WalkDir(input_path)
 		if err != nil {
-			fmt.Println("Could not walk directory or file", err)
+			fmt.Println("Could not walk directory or file:", err)
 			os.Exit(1)
 		}
 	},
@@ -64,5 +52,5 @@ func Execute() {
 
 func init() {
 	root_command.Flags().StringVarP(&input_path, "path", "p", ".", "used to specify root path -- default is current working directory")
-	root_command.Flags().StringVarP(&output_path, "output", "o", "todos.md", "used to specify output path -- default is current working directory")
+	root_command.Flags().StringVarP(&output_path, "output", "o", "", "used to specify output path -- default is current working directory")
 }
