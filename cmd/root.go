@@ -1,5 +1,5 @@
 /*
-Copyright © 2024 Joshua Benn sublimeibanez@protonmail.com
+Copyright © 2024 Joshua Benn sublimeibanez@protonmail.com and Jon-Micheal Hartway jhartway99@gmail.com
 */
 package cmd
 
@@ -22,7 +22,7 @@ var root_command = &cobra.Command{
 of "TODO" within any files. Lists these "TODO"s in a markdown file with links to that file.
 
 Example:
-    todor -p src`,
+    todor -p src -o output.md`,
 	Args: cobra.RangeArgs(0, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		// Create the parser
