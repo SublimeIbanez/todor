@@ -3,13 +3,16 @@ package file
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 )
 
+// TODO: Create a config file and have these constants placed there
 const DEFAULT_OUTPUT_FILE_NAME string = "todos.md"
+const DEFAULT_FILE_PERMISSIONS int = 0644
 
 type Parser struct {
 	Input      chan ToDo
@@ -20,6 +23,7 @@ type Parser struct {
 	WaitGroup  sync.WaitGroup
 }
 
+// Generates a new parser to manage i/o of the requisite data. Returns error if file operations fail
 func NewParser(output_path string) (*Parser, error) {
 	var output_file *os.File
 	var err error
@@ -31,7 +35,7 @@ func NewParser(output_path string) (*Parser, error) {
 	path_info, err := os.Stat(output_path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			output_file, err = os.OpenFile(output_path, os.O_CREATE|os.O_WRONLY, 0644)
+			output_file, err = os.OpenFile(output_path, os.O_CREATE|os.O_WRONLY, fs.FileMode(DEFAULT_FILE_PERMISSIONS))
 			if err != nil {
 				return nil, fmt.Errorf("failed to create output file: %w", err)
 			}
@@ -48,12 +52,11 @@ func NewParser(output_path string) (*Parser, error) {
 		}
 	} else {
 		// Output path is a file
-		output_file, err = os.OpenFile(output_path, os.O_CREATE|os.O_WRONLY, 0644)
+		output_file, err = os.OpenFile(output_path, os.O_CREATE|os.O_WRONLY, fs.FileMode(DEFAULT_FILE_PERMISSIONS))
 		if err != nil {
 			return nil, fmt.Errorf("failed to open output file: %w", err)
 		}
 	}
-	fmt.Println(output_path)
 
 	// Create the context
 	context, cancel := context.WithCancel(context.Background())
@@ -73,12 +76,16 @@ func NewParser(output_path string) (*Parser, error) {
 }
 
 func (parser *Parser) init() int {
+	// Input the count of goroutines created in init for adding to the wait group
+	goroutines := 2
+
 	go parser.handleInput()
 	go parser.handleOutput()
-	return 2
+
+	return goroutines
 }
 
-// TODO: finish this
+// Handles formatting the requisite data
 func (parser *Parser) handleInput() {
 	defer parser.WaitGroup.Done()
 	for input := range parser.Input {
@@ -92,7 +99,7 @@ func (parser *Parser) handleInput() {
 	}
 }
 
-// TODO: finish this
+// Handles outputing the formatted data to the output file
 func (parser *Parser) handleOutput() {
 	defer parser.WaitGroup.Done()
 	for output := range parser.Output {

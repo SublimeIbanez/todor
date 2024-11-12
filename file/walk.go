@@ -3,6 +3,7 @@ package file
 import (
 	"bufio"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,7 +29,7 @@ func (parser *Parser) WalkDir(input_path string) error {
 			}
 
 			if !d.IsDir() {
-				if err = parser.ReadFile(path); err != nil {
+				if err = parser.readFile(path); err != nil {
 					return err
 				}
 			}
@@ -39,7 +40,7 @@ func (parser *Parser) WalkDir(input_path string) error {
 			return fmt.Errorf("error walking the directory: %v", err)
 		}
 	} else {
-		if err := parser.ReadFile(full_path); err != nil {
+		if err := parser.readFile(full_path); err != nil {
 			return err
 		}
 	}
@@ -47,16 +48,26 @@ func (parser *Parser) WalkDir(input_path string) error {
 	return nil
 }
 
-func (parser *Parser) ReadFile(path string) error {
-	file, err := os.OpenFile(path, os.O_RDONLY, 0644)
+// Read the file and find any requisite data. Pass this data to the Input channel in the parser
+func (parser *Parser) readFile(path string) error {
+	// Open the file for reading
+	file, err := os.OpenFile(path, os.O_RDONLY, fs.FileMode(DEFAULT_FILE_PERMISSIONS))
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
+	// Pull the file into the buffer
 	scanner := bufio.NewScanner(file)
+
+	// Create a temporary ToDo struct to hold the information
 	todo := ToDo{RelativePath: path}
+
+	// TODO: find a more elegant way to handle line number (e.g. range but afaik can't range on scanner.Scan())
 	line_number := 1
+
+	// Scan line-by-line searching for requisite callbacks
+	// TODO: Create a config that a user can input which triggers they'd like to look for
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.Contains(line, "TODO:") {
@@ -64,9 +75,12 @@ func (parser *Parser) ReadFile(path string) error {
 		}
 		line_number += 1
 	}
+
+	// Only if the array length is > 0 should the temporary ToDo struct be added to the Input channel
 	if len(todo.ToDo) > 0 {
 		parser.Input <- todo
 	}
 
+	// Return all errors
 	return scanner.Err()
 }
