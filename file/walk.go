@@ -11,9 +11,12 @@ import (
 	"github.com/SublimeIbanez/todor/common"
 )
 
+var buffer = make([]byte, 0, 64*1024)
+
+const buffer_size int = 1024 * 1024
+
 // Recursively walk through the directory and read through all items
 func (parser *Parser) WalkDir(input_path string) error {
-	defer parser.Context.Done()
 	input, err := os.Stat(input_path)
 	if err != nil {
 		return err
@@ -24,29 +27,28 @@ func (parser *Parser) WalkDir(input_path string) error {
 		return err
 	}
 
-	ignore_list := parser.Cfg.Ignore
+	ignore_list := parser.Config.Ignore
 	// Find .gitgnore if UseGitIgnore from the config file is correct -- extract into ignore files
-	if parser.Cfg.UseGitIgnore == common.UseGitIgnore {
+	if parser.Config.UseGitIgnore == common.UseGitIgnore {
 		filepath.WalkDir(full_path, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
 
 			if d.Name() == string(common.GitIgnore) {
-				file, err := os.OpenFile(path, os.O_RDONLY, fs.FileMode(common.DEFAULT_FILE_PERMISSIONS))
-				if err != nil {
-					return err
+				file, e := os.OpenFile(path, os.O_RDONLY, fs.FileMode(common.DEFAULT_FILE_PERMISSIONS))
+				if e != nil {
+					return e
 				}
 
 				scanner := bufio.NewScanner(file)
-				buffer := make([]byte, 0, 64*1024)
-				scanner.Buffer(buffer, 1024*1024)
+				scanner.Buffer(buffer, buffer_size)
 
 				for scanner.Scan() {
-					line := scanner.Text()
+					line := strings.TrimSpace(scanner.Text())
 
 					// Ignore comments
-					if strings.Contains(line, "#") {
+					if len(line) == 0 || strings.HasPrefix(line, "#") {
 						continue
 					}
 
@@ -54,12 +56,13 @@ func (parser *Parser) WalkDir(input_path string) error {
 				}
 
 				file.Close()
-				fmt.Println(ignore_list)
+				return scanner.Err()
 			}
 
 			return nil
 		})
 	}
+	fmt.Println(ignore_list)
 
 	if input.IsDir() {
 		err = filepath.WalkDir(full_path, func(path string, d os.DirEntry, err error) error {
@@ -71,13 +74,12 @@ func (parser *Parser) WalkDir(input_path string) error {
 			for _, ignore := range ignore_list {
 				if strings.Contains(path, ignore) {
 					marked_ignore = true
-					break
 				}
 			}
 
 			if !d.IsDir() && !marked_ignore {
 				if e := parser.readFile(path); e != nil {
-					return e
+					return fmt.Errorf("could not read file at <%s>: %v", path, e)
 				}
 			}
 

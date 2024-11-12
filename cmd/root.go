@@ -31,13 +31,14 @@ Example:
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		defer parser.Shutdown()
 
 		err = parser.WalkDir(input_path)
 		if err != nil {
 			fmt.Println("Could not walk directory or file:", err)
 			os.Exit(1)
 		}
+
+		parser.Shutdown()
 	},
 }
 

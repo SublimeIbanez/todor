@@ -19,6 +19,11 @@ const (
 	GitIgnore   DefaultIgnoreOptions = ".gitignore"
 	NodeModules DefaultIgnoreOptions = "node_modules"
 	Next        DefaultIgnoreOptions = ".next"
+	Png         DefaultIgnoreOptions = ".png"
+	Bmp         DefaultIgnoreOptions = ".bmp"
+	Jpeg        DefaultIgnoreOptions = ".jpeg"
+	Svc         DefaultIgnoreOptions = ".svc"
+	Eps         DefaultIgnoreOptions = ".eps"
 
 	// Fucking go I swear this is your biggest hindrance
 	InvalidUseGitIgnore UseGitIgnoreOptions = 0
@@ -38,7 +43,7 @@ func (cfg *ConfigOptions) setDefaults() {
 
 	if cfg.Ignore == nil {
 		must_save = true
-		cfg.Ignore = []string{string(Git), string(GitIgnore), string(Next), string(NodeModules)}
+		cfg.Ignore = []string{string(Git), string(GitIgnore), string(Next), string(NodeModules), string(Bmp), string(Jpeg), string(Svc), string(Png), string(Eps)}
 	}
 	if cfg.DefaultOutputDir == "" {
 		must_save = true
@@ -57,7 +62,7 @@ func (cfg *ConfigOptions) setDefaults() {
 
 func DefaultConfig() ConfigOptions {
 	defaultConfig := ConfigOptions{
-		Ignore:           []string{string(Git), string(GitIgnore), string(Next), string(NodeModules)},
+		Ignore:           []string{string(Git), string(GitIgnore), string(Next), string(NodeModules), string(Bmp), string(Jpeg), string(Svc), string(Png), string(Eps)},
 		UseGitIgnore:     UseGitIgnore,
 		DefaultOutputDir: ".",
 	}
