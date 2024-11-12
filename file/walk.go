@@ -61,6 +61,8 @@ func (parser *Parser) readFile(path string) error {
 
 	// Pull the file into the buffer
 	scanner := bufio.NewScanner(file)
+	buffer := make([]byte, 0, 64*1024)
+	scanner.Buffer(buffer, 1024*1024)
 
 	// Create a temporary ToDo struct to hold the information
 	todo := ToDo{RelativePath: path}
