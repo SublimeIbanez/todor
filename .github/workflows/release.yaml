@@ -1,0 +1,16 @@
+name: Manual Release
+on:
+  workflow_dispatch:
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Test"
+  Build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Build"
+  Dist:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Dist"

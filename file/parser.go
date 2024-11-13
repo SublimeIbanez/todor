@@ -8,11 +8,12 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/SublimeIbanez/todor/common"
 )
 
 // TODO: Create a config file and have these constants placed there
 const DEFAULT_OUTPUT_FILE_NAME string = "todos.md"
-const DEFAULT_FILE_PERMISSIONS int = 0644
 
 type Parser struct {
 	Input      chan ToDo
@@ -21,21 +22,33 @@ type Parser struct {
 	Context    context.Context
 	Cancel     context.CancelFunc
 	WaitGroup  sync.WaitGroup
+	Cfg        common.ConfigOptions
 }
 
 // Generates a new parser to manage i/o of the requisite data. Returns error if file operations fail
 func NewParser(output_path string) (*Parser, error) {
+	var cfg common.ConfigOptions
 	var output_file *os.File
 	var err error
 
+	cfg, err = common.LoadConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load configuration: %w", err)
+	}
+
 	if len(output_path) == 0 {
-		output_path = DEFAULT_OUTPUT_FILE_NAME
+		output_dir, err := filepath.Abs(cfg.DefaultOutputDir)
+		if err != nil {
+			return nil, err
+		}
+
+		output_path = filepath.Join(output_dir, DEFAULT_OUTPUT_FILE_NAME)
 	}
 
 	path_info, err := os.Stat(output_path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			output_file, err = os.OpenFile(output_path, os.O_CREATE|os.O_WRONLY, fs.FileMode(DEFAULT_FILE_PERMISSIONS))
+			output_file, err = os.OpenFile(output_path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, fs.FileMode(common.DEFAULT_FILE_PERMISSIONS))
 			if err != nil {
 				return nil, fmt.Errorf("failed to create output file: %w", err)
 			}
@@ -45,14 +58,14 @@ func NewParser(output_path string) (*Parser, error) {
 	} else if path_info.IsDir() {
 		// Output path is a directory; create the default file inside it
 		output_file_path := filepath.Join(output_path, DEFAULT_OUTPUT_FILE_NAME)
-		output_file, err = os.OpenFile(output_file_path, os.O_CREATE|os.O_WRONLY, 0644)
+		output_file, err = os.OpenFile(output_file_path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, fs.FileMode(common.DEFAULT_FILE_PERMISSIONS))
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to open output file: %w", err)
 		}
 	} else {
 		// Output path is a file
-		output_file, err = os.OpenFile(output_path, os.O_CREATE|os.O_WRONLY, fs.FileMode(DEFAULT_FILE_PERMISSIONS))
+		output_file, err = os.OpenFile(output_path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, fs.FileMode(common.DEFAULT_FILE_PERMISSIONS))
 		if err != nil {
 			return nil, fmt.Errorf("failed to open output file: %w", err)
 		}
@@ -68,6 +81,7 @@ func NewParser(output_path string) (*Parser, error) {
 		OutputFile: output_file,
 		Context:    context,
 		Cancel:     cancel,
+		Cfg:        cfg,
 	}
 	waiting := parser.init()
 	parser.WaitGroup.Add(waiting)
