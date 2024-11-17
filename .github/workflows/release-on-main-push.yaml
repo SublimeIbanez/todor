@@ -21,6 +21,7 @@ jobs:
           fi
           git tag $VERSION &&
           git push origin $VERSION
+          git checkout $VERSION
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
