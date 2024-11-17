@@ -6,9 +6,6 @@ on:
   
 jobs:
   run-on-approval:
-    if: |
-      github.event.review.state == 'approved' &&
-      github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
