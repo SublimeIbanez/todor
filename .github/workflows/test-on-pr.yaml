@@ -1,0 +1,26 @@
+name: Test on pr
+on:
+  pull_request:
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23' 
+      - run: go test ./
+  Build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
+      - run: mkdir ./bin && go build -o ./bin/todor ./
+  IntegrationTests:
+    # makes sure that we can build before we go into this step
+    needs: Build
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "TODO Integration tests"

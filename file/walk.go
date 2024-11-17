@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/SublimeIbanez/todor/common"
 )
 
 // Recursively walk through the directory and read through all items
@@ -51,7 +53,7 @@ func (parser *Parser) WalkDir(input_path string) error {
 // Read the file and find any requisite data. Pass this data to the Input channel in the parser
 func (parser *Parser) readFile(path string) error {
 	// Open the file for reading
-	file, err := os.OpenFile(path, os.O_RDONLY, fs.FileMode(DEFAULT_FILE_PERMISSIONS))
+	file, err := os.OpenFile(path, os.O_RDONLY, fs.FileMode(common.DEFAULT_FILE_PERMISSIONS))
 	if err != nil {
 		return err
 	}
@@ -59,6 +61,8 @@ func (parser *Parser) readFile(path string) error {
 
 	// Pull the file into the buffer
 	scanner := bufio.NewScanner(file)
+	buffer := make([]byte, 0, 64*1024)
+	scanner.Buffer(buffer, 1024*1024)
 
 	// Create a temporary ToDo struct to hold the information
 	todo := ToDo{RelativePath: path}
