@@ -1,11 +1,11 @@
 package configuration
 
-type Group []string
+type WhitelistGroup []string
 
 var (
-	React   Group = []string{".html", ".css", ".js", ".jsx", ".ts", ".tsx"}
-	ReactTs Group = []string{".html", ".css", ".ts", ".tsx"}
-	ReactJs Group = []string{".html", ".css", ".js", ".jsx"}
+	React_Whitelist   WhitelistGroup = []string{".html", ".css", ".js", ".jsx", ".ts", ".tsx"}
+	ReactTs_Whitelist WhitelistGroup = []string{".html", ".css", ".ts", ".tsx"}
+	ReactJs_Whitelist WhitelistGroup = []string{".html", ".css", ".js", ".jsx"}
 )
 
 func (cfg *ConfigOptions) AddGroup(group string) error {
