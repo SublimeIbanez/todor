@@ -69,6 +69,22 @@ func getConfigFilePath() (string, error) {
 	}
 
 	var config_dir string
+	// GOOS operating systems | GOARCH architectures:
+	// - AIX:                 `aix`       | ppc64,
+	// - Android:             `android`   | 386, amd64, arm, arm64,
+	// - MacOS:               `darwin`    | amd64, arm64,
+	// - Dragonfly:           `dragonfly` | amd64,
+	// - FreeBSD:             `freebsd`   | 386, amd64, arm,
+	// - Illumos:             `illumos`   | amd64,
+	// - iOS:                 `iOS`       | arm64,
+	// - JSRE:                `js`        | wasm,
+	// - Linux:               `linux`     | 386, amd64, arm, arm64, loong64, mips, mipsle, mips64, mips64le, ppc64, ppc64le, riscv64, s390x,
+	// - NetBSD:              `netbsd`    | 386, amd64, arm,
+	// - OpenBSD:             `openbsd`   | 386, amd64, arm, arm64,
+	// - Plan9:               `plan9`     | 386, amd64, arm,
+	// - Solaris:             `solaris`   | amd64,
+	// - WASI Preview 1:      `wasip1`    | wasm,
+	// - Windows:             `windows`   | 386, amd64, arm, arm64
 	switch runtime.GOOS {
 	case "windows":
 		config_dir = filepath.Join(home_dir, "AppData", "Local", "todor")
@@ -76,6 +92,8 @@ func getConfigFilePath() (string, error) {
 	case "linux":
 		config_dir = filepath.Join(home_dir, ".config", "todor")
 		break
+	case "darwin": // MacOS
+		config_dir = filepath.Join(home_dir, "Library", "Application Support", "todor")
 	default:
 		return "", fmt.Errorf("operating system <%s> not currently supported", runtime.GOOS)
 	}
