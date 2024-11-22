@@ -27,15 +27,15 @@ func (parser *Parser) WalkDir(input_path string) error {
 		return err
 	}
 
-	ignore_list := []string{}
+	ignore_list := parser.Config.Blacklist
 	// Find .gitgnore if UseGitIgnore from the config file is correct -- extract into ignore files
-	if parser.Config.UseGitIgnore == common.UseGitIgnore {
+	if *parser.Config.Gitignore {
 		filepath.WalkDir(full_path, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
 
-			if d.Name() == string(common.GitIgnore) {
+			if d.Name() == string(common.GIT_IGNORE) {
 				file, e := os.OpenFile(path, os.O_RDONLY, fs.FileMode(common.DEFAULT_FILE_PERMISSIONS))
 				if e != nil {
 					return e
@@ -48,10 +48,11 @@ func (parser *Parser) WalkDir(input_path string) error {
 					line := strings.TrimSpace(scanner.Text())
 
 					// Ignore comments
-					if len(line) == 0 || strings.HasPrefix(line, "#") {
+					if len(line) == 0 || strings.HasPrefix(line, string(common.GIT_IGNORE_COMMENT_PREFIX)) {
 						continue
 					}
 
+					// TODO: Handle `*` properly
 					ignore_list = append(ignore_list, strings.Replace(line, "*", "", -1))
 				}
 

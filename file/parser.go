@@ -37,7 +37,7 @@ func NewParser(output_path string) (*Parser, error) {
 	}
 
 	if len(output_path) == 0 {
-		output_dir, err := filepath.Abs(cfg.DefaultOutputDir)
+		output_dir, err := filepath.Abs(cfg.OutputDirectory)
 		if err != nil {
 			return nil, err
 		}

@@ -13,53 +13,76 @@ import (
 const CONFIG_FILE_NAME string = ".todor_cfg.json"
 
 type DefaultBlacklistFile string
-type UseGitIgnoreOptions int
 
-const (
-	GitIgnore DefaultBlacklistFile = ".gitignore"
-
-	// Fucking go I swear this is your biggest hindrance
-	InvalidUseGitIgnore UseGitIgnoreOptions = 0
-	UseGitIgnore        UseGitIgnoreOptions = 1
-	DoNotUseGitIgnore   UseGitIgnoreOptions = 2
+var (
+	CurrentVersion         string   = "0.0.1"
+	DefaultWhitelist       []string = []string{}
+	DefaultBlacklist       []string = []string{}
+	DefaultUseGitignore    bool     = true
+	DefaultOutputDirectory string   = "."
 )
 
 type ConfigOptions struct {
-	Whitelist        []string
-	UseGitIgnore     UseGitIgnoreOptions
-	DefaultOutputDir string
+	// Zero-width to disallow positional initialization
+	_ struct{}
+	// Semantic versioning
+	Version string `json:"version"`
+	// List of all file/directory names and filetypes to parse
+	Whitelist []string `json:"whitelist"`
+	// List of all file/directory names and filetypes to not parse
+	Blacklist []string `json:"blacklist"`
+	// Uses the root directory's .gitignore as well as loaded blacklist
+	Gitignore *bool `json:"gitignore"`
+	// Output directory for the markdown file
+	OutputDirectory string `json:"output_directory"`
+}
+
+// Generates a default configuration struct
+func DefaultConfig() ConfigOptions {
+	defaultConfig := ConfigOptions{
+		Version:         CurrentVersion,
+		Whitelist:       DefaultWhitelist,
+		Blacklist:       DefaultBlacklist,
+		Gitignore:       &DefaultUseGitignore,
+		OutputDirectory: DefaultOutputDirectory,
+	}
+
+	return defaultConfig
 }
 
 // Sets defaults for outdated configuration files and saves them if necessary
-func (cfg *ConfigOptions) setDefaults() {
+func (cfg *ConfigOptions) validate() error {
 	must_save := false
 
+	if len(cfg.Version) == 0 || cfg.Version != CurrentVersion {
+		must_save = true
+		cfg.Version = CurrentVersion
+	}
 	if cfg.Whitelist == nil {
 		must_save = true
+		cfg.Whitelist = DefaultWhitelist
 	}
-	if cfg.DefaultOutputDir == "" {
+	if cfg.Blacklist == nil {
 		must_save = true
-		cfg.DefaultOutputDir = "."
+		cfg.Blacklist = DefaultBlacklist
 	}
-	if cfg.UseGitIgnore == InvalidUseGitIgnore {
+	if cfg.OutputDirectory == "" {
 		must_save = true
-		cfg.UseGitIgnore = UseGitIgnore
+		cfg.OutputDirectory = DefaultOutputDirectory
+	}
+	if cfg.Gitignore == nil {
+		must_save = true
+		cfg.Gitignore = &DefaultUseGitignore
 	}
 
 	if must_save {
 		fmt.Println("Updating config file to new version")
-		cfg.saveConfig()
-	}
-}
-
-func DefaultConfig() ConfigOptions {
-	defaultConfig := ConfigOptions{
-		Whitelist:        []string{},
-		UseGitIgnore:     UseGitIgnore,
-		DefaultOutputDir: ".",
+		if err := cfg.saveConfig(); err != nil {
+			return err
+		}
 	}
 
-	return defaultConfig
+	return nil
 }
 
 func getConfigFilePath() (string, error) {
@@ -108,28 +131,33 @@ func getConfigFilePath() (string, error) {
 func LoadConfig() (ConfigOptions, error) {
 	config_file_path, err := getConfigFilePath()
 	if err != nil {
-		return ConfigOptions{}, nil
+		return ConfigOptions{}, fmt.Errorf("could not get configuration file path: %w", err)
 	}
 
 	data, err := os.ReadFile(config_file_path)
 	if err != nil {
+		// If the config doesn't exist
 		if os.IsNotExist(err) {
 			default_config := DefaultConfig()
 			fmt.Printf("No configuration file found at %s, generating defaults", config_file_path)
 			if err := default_config.saveConfig(); err != nil {
-				log.Fatal("Could not save default_config: ", err)
+				log.Fatalf("Could not save default_config: %s", err.Error())
 			}
 			return default_config, nil
 		}
-		return ConfigOptions{}, err
+
+		// All other options
+		return ConfigOptions{}, fmt.Errorf("could not read configuration file: %w", err)
 	}
 
 	var cfg ConfigOptions
 	if err = json.Unmarshal(data, &cfg); err != nil {
-		return ConfigOptions{}, err
+		return ConfigOptions{}, fmt.Errorf("could not unmarshal configuration file: %w", err)
 	}
 
-	cfg.setDefaults()
+	if err = cfg.validate(); err != nil {
+		return ConfigOptions{}, fmt.Errorf("unable to validate configuration file: %w", err)
+	}
 
 	return cfg, nil
 }
@@ -137,40 +165,24 @@ func LoadConfig() (ConfigOptions, error) {
 func (config *ConfigOptions) saveConfig() error {
 	config_file_path, err := getConfigFilePath()
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to obtain configuration file path: %w", err)
 	}
 
 	file, err := os.OpenFile(config_file_path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, fs.FileMode(DEFAULT_FILE_PERMISSIONS))
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to open the file: %w", err)
 	}
 	defer file.Close()
 
 	json_data, err := json.MarshalIndent(config, "", "    ")
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to marshal data: %w", err)
 	}
 
 	_, err = file.Write(json_data)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to write to file: %w", err)
 	}
 
 	return nil
-}
-
-func (cfg *ConfigOptions) SetWhiteList(whiteList []string) {
-	cfg.Whitelist = whiteList
-	err := cfg.saveConfig()
-	if err != nil {
-		log.Fatal("Unable to save changes to white list: ", err)
-	}
-}
-
-func (cfg *ConfigOptions) AddIgnore(whitelist_item string) {
-	cfg.Whitelist = append(cfg.Whitelist, whitelist_item)
-	err := cfg.saveConfig()
-	if err != nil {
-		log.Fatal("Unable to save changes to ignore list: ", err)
-	}
 }
