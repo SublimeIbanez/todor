@@ -1,4 +1,4 @@
-package common
+package configuration
 
 import (
 	"encoding/json"
@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"github.com/SublimeIbanez/todor/common"
 )
 
 const CONFIG_FILE_NAME string = ".todor_cfg.json"
@@ -168,7 +170,7 @@ func (config *ConfigOptions) saveConfig() error {
 		return fmt.Errorf("unable to obtain configuration file path: %w", err)
 	}
 
-	file, err := os.OpenFile(config_file_path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, fs.FileMode(DEFAULT_FILE_PERMISSIONS))
+	file, err := os.OpenFile(config_file_path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, fs.FileMode(common.DEFAULT_FILE_PERMISSIONS))
 	if err != nil {
 		return fmt.Errorf("unable to open the file: %w", err)
 	}

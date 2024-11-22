@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/SublimeIbanez/todor/common"
+	"github.com/SublimeIbanez/todor/configuration"
 )
 
 // TODO: Create a config file and have these constants placed there
@@ -22,16 +23,16 @@ type Parser struct {
 	Context    context.Context
 	Cancel     context.CancelFunc
 	WaitGroup  sync.WaitGroup
-	Config     common.ConfigOptions
+	Config     configuration.ConfigOptions
 }
 
 // Generates a new parser to manage i/o of the requisite data. Returns error if file operations fail
 func NewParser(output_path string) (*Parser, error) {
-	var cfg common.ConfigOptions
+	var cfg configuration.ConfigOptions
 	var output_file *os.File
 	var err error
 
-	cfg, err = common.LoadConfig()
+	cfg, err = configuration.LoadConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load configuration: %w", err)
 	}

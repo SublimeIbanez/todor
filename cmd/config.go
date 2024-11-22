@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/SublimeIbanez/todor/common"
+	"github.com/SublimeIbanez/todor/configuration"
 	"github.com/spf13/cobra"
 )
 
@@ -37,11 +37,13 @@ var whitelist_add_command = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	Aliases: []string{"a"},
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg, err := common.LoadConfig()
+		cfg, err := configuration.LoadConfig()
 		if err != nil {
 			fmt.Println("Could not load configuration file:", err)
 			os.Exit(1)
 		}
+
+		fmt.Println(cfg)
 
 	},
 }

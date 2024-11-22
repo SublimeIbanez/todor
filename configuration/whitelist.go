@@ -1,4 +1,4 @@
-package common
+package configuration
 
 type Group []string
 
