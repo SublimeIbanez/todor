@@ -1,3 +1,4 @@
 package common
 
 const DEFAULT_FILE_PERMISSIONS int = 0644
+const DEFAULT_DIRECTORY_PERMISSIONS int = 0755

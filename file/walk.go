@@ -27,7 +27,7 @@ func (parser *Parser) WalkDir(input_path string) error {
 		return err
 	}
 
-	ignore_list := parser.Config.Ignore
+	ignore_list := []string{}
 	// Find .gitgnore if UseGitIgnore from the config file is correct -- extract into ignore files
 	if parser.Config.UseGitIgnore == common.UseGitIgnore {
 		filepath.WalkDir(full_path, func(path string, d os.DirEntry, err error) error {
@@ -70,16 +70,22 @@ func (parser *Parser) WalkDir(input_path string) error {
 				return err
 			}
 
-			marked_ignore := false
-			for _, ignore := range ignore_list {
-				if strings.Contains(path, ignore) {
-					marked_ignore = true
+			marked_ignore := true
+			if len(ignore_list) > 0 {
+				for _, ignore := range ignore_list {
+					if strings.Contains(path, ignore) {
+						marked_ignore = true
+					}
 				}
 			}
 
-			if !d.IsDir() && !marked_ignore {
-				if e := parser.readFile(path); e != nil {
-					return fmt.Errorf("could not read file at <%s>: %v", path, e)
+			if !d.IsDir() && !marked_ignore && len(parser.Config.Whitelist) > 0 {
+				for _, allowed := range parser.Config.Whitelist {
+					if strings.Contains(path, allowed) {
+						if e := parser.readFile(path); e != nil {
+							return fmt.Errorf("could not read file at <%s>: %v", path, e)
+						}
+					}
 				}
 			}
 

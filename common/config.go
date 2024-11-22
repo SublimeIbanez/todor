@@ -7,23 +7,16 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 const CONFIG_FILE_NAME string = ".todor_cfg.json"
 
-type DefaultIgnoreOptions string
+type DefaultBlacklistFile string
 type UseGitIgnoreOptions int
 
 const (
-	Git         DefaultIgnoreOptions = ".git"
-	GitIgnore   DefaultIgnoreOptions = ".gitignore"
-	NodeModules DefaultIgnoreOptions = "node_modules"
-	Next        DefaultIgnoreOptions = ".next"
-	Png         DefaultIgnoreOptions = ".png"
-	Bmp         DefaultIgnoreOptions = ".bmp"
-	Jpeg        DefaultIgnoreOptions = ".jpeg"
-	Svc         DefaultIgnoreOptions = ".svc"
-	Eps         DefaultIgnoreOptions = ".eps"
+	GitIgnore DefaultBlacklistFile = ".gitignore"
 
 	// Fucking go I swear this is your biggest hindrance
 	InvalidUseGitIgnore UseGitIgnoreOptions = 0
@@ -32,7 +25,7 @@ const (
 )
 
 type ConfigOptions struct {
-	Ignore           []string
+	Whitelist        []string
 	UseGitIgnore     UseGitIgnoreOptions
 	DefaultOutputDir string
 }
@@ -41,9 +34,8 @@ type ConfigOptions struct {
 func (cfg *ConfigOptions) setDefaults() {
 	must_save := false
 
-	if cfg.Ignore == nil {
+	if cfg.Whitelist == nil {
 		must_save = true
-		cfg.Ignore = []string{string(Git), string(GitIgnore), string(Next), string(NodeModules), string(Bmp), string(Jpeg), string(Svc), string(Png), string(Eps)}
 	}
 	if cfg.DefaultOutputDir == "" {
 		must_save = true
@@ -62,7 +54,7 @@ func (cfg *ConfigOptions) setDefaults() {
 
 func DefaultConfig() ConfigOptions {
 	defaultConfig := ConfigOptions{
-		Ignore:           []string{string(Git), string(GitIgnore), string(Next), string(NodeModules), string(Bmp), string(Jpeg), string(Svc), string(Png), string(Eps)},
+		Whitelist:        []string{},
 		UseGitIgnore:     UseGitIgnore,
 		DefaultOutputDir: ".",
 	}
@@ -73,15 +65,26 @@ func DefaultConfig() ConfigOptions {
 func getConfigFilePath() (string, error) {
 	home_dir, err := os.UserHomeDir()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	home_dir_path, err := filepath.Abs(home_dir)
-	if err != nil {
-		return "", err
+	var config_dir string
+	switch runtime.GOOS {
+	case "windows":
+		config_dir = filepath.Join(home_dir, "AppData", "Local", "todor")
+		break
+	case "linux":
+		config_dir = filepath.Join(home_dir, ".config", "todor")
+		break
+	default:
+		return "", fmt.Errorf("operating system <%s> not currently supported", runtime.GOOS)
 	}
 
-	return filepath.Join(home_dir_path, CONFIG_FILE_NAME), nil
+	if err := os.MkdirAll(config_dir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	return filepath.Join(config_dir, CONFIG_FILE_NAME), nil
 }
 
 func LoadConfig() (ConfigOptions, error) {
@@ -138,16 +141,16 @@ func (config *ConfigOptions) saveConfig() error {
 	return nil
 }
 
-func (cfg *ConfigOptions) SetIgnore(ignoreList []string) {
-	cfg.Ignore = ignoreList
+func (cfg *ConfigOptions) SetWhiteList(whiteList []string) {
+	cfg.Whitelist = whiteList
 	err := cfg.saveConfig()
 	if err != nil {
-		log.Fatal("Unable to save changes to ignore list: ", err)
+		log.Fatal("Unable to save changes to white list: ", err)
 	}
 }
 
-func (cfg *ConfigOptions) AddIgnore(ignore_item string) {
-	cfg.Ignore = append(cfg.Ignore, ignore_item)
+func (cfg *ConfigOptions) AddIgnore(whitelist_item string) {
+	cfg.Whitelist = append(cfg.Whitelist, whitelist_item)
 	err := cfg.saveConfig()
 	if err != nil {
 		log.Fatal("Unable to save changes to ignore list: ", err)
