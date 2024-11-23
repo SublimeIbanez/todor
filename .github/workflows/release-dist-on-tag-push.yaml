@@ -3,7 +3,7 @@ name: Release dist on tag push to from main
 on: 
   push:
     tags:
-      - "v*.*"
+      - "v*.**"
 
 jobs:
   build:
