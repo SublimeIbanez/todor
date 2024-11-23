@@ -1,25 +1,20 @@
 package configuration
 
-type WhitelistGroup []string
+import "slices"
 
-var (
-	React_Whitelist   WhitelistGroup = []string{".html", ".css", ".js", ".jsx", ".ts", ".tsx"}
-	ReactTs_Whitelist WhitelistGroup = []string{".html", ".css", ".ts", ".tsx"}
-	ReactJs_Whitelist WhitelistGroup = []string{".html", ".css", ".js", ".jsx"}
-)
+func (cfg *ConfigOptions) AddToWhitelist(group string) error {
+	if slices.Contains(cfg.Whitelist, group) {
+		return nil
+	}
 
-func (cfg *ConfigOptions) AddGroup(group string) error {
+	cfg.Whitelist = append(cfg.Whitelist, group)
+	if err := cfg.saveConfig(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (cfg *ConfigOptions) AddSingle(group string) error {
-	return nil
-}
-
-func (cfg *ConfigOptions) RemoveGroup(group string) error {
-	return nil
-}
-
-func (cfg *ConfigOptions) RemoveSingle(group string) error {
+func (cfg *ConfigOptions) RemoveFromWhitelist(group string) error {
 	return nil
 }

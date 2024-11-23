@@ -18,10 +18,8 @@ var config_command = &cobra.Command{
 
 // Whitelist ***********************************************
 var (
-	whitelist_add_group     string = ""
-	whitelist_add_single    string = ""
-	whitelist_remove_group  string = ""
-	whitelist_remove_single string = ""
+	whitelist_add    string = ""
+	whitelist_remove string = ""
 )
 
 var whitelist_command = &cobra.Command{
@@ -33,7 +31,7 @@ var whitelist_command = &cobra.Command{
 
 var whitelist_add_command = &cobra.Command{
 	Use:     "add",
-	Short:   "Add an item or group to the whitelist",
+	Short:   "Add an item to the whitelist",
 	Args:    cobra.ExactArgs(1),
 	Aliases: []string{"a"},
 	Run: func(cmd *cobra.Command, args []string) {
@@ -50,7 +48,47 @@ var whitelist_add_command = &cobra.Command{
 
 var whitelist_remove_command = &cobra.Command{
 	Use:     "remove",
-	Short:   "Remove an item or group to the whitelist",
+	Short:   "Remove an item from the whitelist",
+	Args:    cobra.ExactArgs(1),
+	Aliases: []string{"r"},
+	Run: func(cmd *cobra.Command, args []string) {
+
+	},
+}
+
+// Whitelist ***********************************************
+var (
+	blacklist_add    string = ""
+	blacklist_remove string = ""
+)
+
+var blacklist_command = &cobra.Command{
+	Use:     "blacklist",
+	Short:   "Modify the blacklist",
+	Args:    cobra.ExactArgs(1),
+	Aliases: []string{"bl"},
+}
+
+var blacklist_add_command = &cobra.Command{
+	Use:     "add",
+	Short:   "Add an item to the blacklist",
+	Args:    cobra.ExactArgs(1),
+	Aliases: []string{"a"},
+	Run: func(cmd *cobra.Command, args []string) {
+		cfg, err := configuration.LoadConfig()
+		if err != nil {
+			fmt.Println("Could not load configuration file:", err)
+			os.Exit(1)
+		}
+
+		fmt.Println(cfg)
+
+	},
+}
+
+var blacklist_remove_command = &cobra.Command{
+	Use:     "remove",
+	Short:   "Remove an item from the blacklist",
 	Args:    cobra.ExactArgs(1),
 	Aliases: []string{"r"},
 	Run: func(cmd *cobra.Command, args []string) {
@@ -94,14 +132,6 @@ var default_output_path = &cobra.Command{
 }
 
 func init() {
-	whitelist_add_command.PersistentFlags().StringVarP(&whitelist_add_group, "group", "g", "", "Group to be added to the whitelist")
-	whitelist_add_command.PersistentFlags().StringVarP(&whitelist_add_single, "single", "s", "", "Single item to be added to the whitelist")
-	whitelist_command.AddCommand(whitelist_add_command)
-
-	whitelist_remove_command.PersistentFlags().StringVarP(&whitelist_remove_group, "group", "g", "", "Group to be removed from the whitelist")
-	whitelist_remove_command.PersistentFlags().StringVarP(&whitelist_remove_single, "single", "s", "", "Single item to be removed from the whitelist")
-	whitelist_command.AddCommand(whitelist_remove_command)
-
 	config_command.AddCommand(whitelist_command)
 	config_command.AddCommand(git_ignore_command)
 	config_command.AddCommand(default_output_path)
