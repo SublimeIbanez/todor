@@ -19,11 +19,3 @@ jobs:
           fi
           git tag $VERSION &&
           git push origin $VERSION
-<<<<<<< Updated upstream
-          git checkout $VERSION
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: ./bin/todor
-=======
->>>>>>> Stashed changes
