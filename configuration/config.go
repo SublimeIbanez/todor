@@ -12,9 +12,9 @@ import (
 	"github.com/SublimeIbanez/todor/common"
 )
 
-const CONFIG_FILE_NAME string = ".todor_cfg.json"
-
 type DefaultBlacklistFile string
+
+const CONFIG_FILE_NAME string = ".todor-config.json"
 
 var (
 	CurrentVersion         string   = "0.0.1"
@@ -22,6 +22,7 @@ var (
 	DefaultBlacklist       []string = []string{}
 	DefaultUseGitignore    bool     = true
 	DefaultOutputDirectory string   = "."
+	DefaultOutputFilename  string   = "TODOS.md"
 )
 
 type ConfigOptions struct {
@@ -37,6 +38,8 @@ type ConfigOptions struct {
 	Gitignore *bool `json:"gitignore"`
 	// Output directory for the markdown file
 	OutputDirectory string `json:"output_directory"`
+	// Output filename of the markdown file
+	OutputFilename string `json:"output_filename"`
 }
 
 // Generates a default configuration struct
@@ -47,6 +50,7 @@ func DefaultConfig() ConfigOptions {
 		Blacklist:       DefaultBlacklist,
 		Gitignore:       &DefaultUseGitignore,
 		OutputDirectory: DefaultOutputDirectory,
+		OutputFilename:  DefaultOutputFilename,
 	}
 
 	return defaultConfig
@@ -68,13 +72,17 @@ func (cfg *ConfigOptions) validate() error {
 		must_save = true
 		cfg.Blacklist = DefaultBlacklist
 	}
-	if cfg.OutputDirectory == "" {
-		must_save = true
-		cfg.OutputDirectory = DefaultOutputDirectory
-	}
 	if cfg.Gitignore == nil {
 		must_save = true
 		cfg.Gitignore = &DefaultUseGitignore
+	}
+	if len(cfg.OutputDirectory) == 0 {
+		must_save = true
+		cfg.OutputDirectory = DefaultOutputDirectory
+	}
+	if len(cfg.OutputFilename) == 0 {
+		must_save = true
+		cfg.OutputFilename = DefaultOutputFilename
 	}
 
 	if must_save {

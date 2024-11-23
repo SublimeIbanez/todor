@@ -9,26 +9,28 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// TODO: For all: better error management and handling rather than log.Fatal
+
 // Config command ******************************************
 var config_command = &cobra.Command{
 	Use:     "config",
 	Short:   "Modify the config file",
 	Long:    `Use to add, remove, or edit configuration settings`,
 	Aliases: []string{"cfg"},
-	Args:    cobra.MinimumNArgs(1),
+	Args:    cobra.NoArgs,
 }
 
 // Whitelist ***********************************************
 var (
-	whitelist_add    string
-	whitelist_remove string
+	whitelist_add    []string
+	whitelist_remove []string
 )
 
 var whitelist_command = &cobra.Command{
 	Use:     "whitelist",
 	Short:   "Modify the whitelist",
 	Aliases: []string{"wl"},
-	Args:    cobra.MatchAll(cobra.MinimumNArgs(1), cobra.MaximumNArgs(2)),
+	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(whitelist_add) == 0 && len(whitelist_remove) == 0 {
 			fmt.Println("Must provide an item to add or remove")
@@ -42,16 +44,20 @@ var whitelist_command = &cobra.Command{
 			log.Fatalf("Could not load configuration: %s", err.Error())
 		}
 
-		// TODO: have some way of managing length limits on input
+		// TODO: Rework error handling so log.Fatal isn't used all the time
 		if add {
-			if err := cfg.AddToWhitelist(whitelist_add); err != nil {
-				log.Fatalf("Could not add items to whitelist: %v", err)
+			for _, item := range whitelist_add {
+				if err := cfg.AddToWhitelist(item); err != nil {
+					log.Fatalf("Could not add item <%s> to whitelist: %v", item, err)
+				}
 			}
 			fmt.Println("Added items to whitelist")
 		}
 		if remove {
-			if err := cfg.RemoveFromWhitelist(whitelist_remove); err != nil {
-				log.Fatalf("Could not remove items from whitelist: %v", err)
+			for _, item := range whitelist_remove {
+				if err := cfg.RemoveFromWhitelist(item); err != nil {
+					log.Fatalf("Could not remove item <%s> from whitelist: %v", item, err)
+				}
 			}
 			fmt.Println("Removed items from whitelist")
 		}
@@ -60,15 +66,15 @@ var whitelist_command = &cobra.Command{
 
 // Blacklist ***********************************************
 var (
-	blacklist_add    string
-	blacklist_remove string
+	blacklist_add    []string
+	blacklist_remove []string
 )
 
 var blacklist_command = &cobra.Command{
 	Use:     "blacklist",
 	Short:   "Modify the blacklist",
 	Aliases: []string{"bl"},
-	Args:    cobra.MinimumNArgs(1),
+	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(blacklist_add) == 0 && len(blacklist_remove) == 0 {
 			fmt.Println("Must provide an item to add or remove")
@@ -82,12 +88,20 @@ var blacklist_command = &cobra.Command{
 			log.Fatalf("Could not load configuration: %s", err.Error())
 		}
 
-		// TODO: have some way of managing length limits on input
+		// TODO: Rework error handling so log.Fatal isn't used all the time
 		if add {
-			cfg.AddToBlacklist(blacklist_add)
+			for _, item := range blacklist_add {
+				if err := cfg.AddToBlacklist(item); err != nil {
+					log.Fatalf("Could not add item <%s> to blacklist: %v", item, err)
+				}
+			}
 		}
 		if remove {
-			cfg.RemoveFromBlacklist(blacklist_remove)
+			for _, item := range blacklist_remove {
+				if err := cfg.RemoveFromBlacklist(item); err != nil {
+					log.Fatalf("Could not remove item <%s> from blacklist: %v", item, err)
+				}
+			}
 		}
 	},
 }
@@ -106,13 +120,13 @@ var git_ignore_command = &cobra.Command{
 		case "false", "f":
 			useGitIgnore = false
 		default:
-			fmt.Println("Invalid value. Use 'true' or 'false'.")
+			log.Fatal("Invalid value. Use 'true', 't', 'false' or 'f'.")
 			return
 		}
 
 		cfg, err := configuration.LoadConfig()
 		if err != nil {
-			log.Fatalf("Could not load configuration file: %s", err.Error())
+			log.Fatalf("Could not load configuration file: %v", err)
 		}
 		if err = cfg.SetGitIgnore(&useGitIgnore); err != nil {
 			log.Fatalf("Could not set the gitignore value: %v", err)
@@ -128,42 +142,60 @@ var (
 	set_output_dir      string
 	set_output_filename string
 )
-var output_directory_command = &cobra.Command{
-	Use:     "output [path]",
-	Short:   "Set the default output directory",
-	Args:    cobra.ExactArgs(1),
+var set_output_command = &cobra.Command{
+	Use:     "output",
+	Short:   "Set the default output path, directory, and/or filename",
+	Args:    cobra.NoArgs,
 	Aliases: []string{"out"},
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			log.Fatal("Must pass a valid path")
+		if len(set_output_path) == 0 && len(set_output_dir) == 0 && len(set_output_filename) == 0 {
+			log.Fatal("Path cannot be empty")
 		}
+
+		handle_output_path := len(set_output_path) != 0
+		handle_output_dir := len(set_output_path) != 0
+		handle_output_filename := len(set_output_path) != 0
 
 		cfg, err := configuration.LoadConfig()
 		if err != nil {
 			log.Fatalf("Could not load config: %v", err)
 		}
 
-		err = cfg.SetOutputPath(args[0])
-		if err != nil {
-			log.Fatalf("Could not set output path: %v", err)
+		if handle_output_path {
+			log.Fatalf("Setting the output path is currently under development")
+		} else {
+			if handle_output_dir {
+				if err = cfg.SetOutputDirectory(set_output_dir); err != nil {
+					log.Fatalf("Could not set output directory: %v", err)
+				}
+				fmt.Printf("Successfully set output directory: %s\n", set_output_dir)
+			}
+
+			if handle_output_filename {
+				if err = cfg.SetOutputFilename(set_output_filename); err != nil {
+					log.Fatalf("Could not set output filename: %v", err)
+				}
+				fmt.Printf("Successfully set output filename: %s\n", set_output_filename)
+			}
 		}
+
 		fmt.Println("Successfully set output directory to")
 	},
 }
 
 func init() {
-	whitelist_command.Flags().StringVarP(&whitelist_add, "add", "a", "", "Add an item to the whitelist")
-	whitelist_command.Flags().StringVarP(&whitelist_remove, "remove", "r", "", "Remove an item from the whitelist")
+	whitelist_command.Flags().StringSliceVarP(&whitelist_add, "add", "a", nil, "Add an item to the whitelist")
+	whitelist_command.Flags().StringSliceVarP(&whitelist_remove, "remove", "r", nil, "Remove an item from the whitelist")
 	config_command.AddCommand(whitelist_command)
 
-	blacklist_command.Flags().StringVarP(&blacklist_add, "add", "a", "", "Add an item to the blacklist")
-	blacklist_command.Flags().StringVarP(&blacklist_remove, "remove", "r", "", "Remove an item from the blacklist")
+	blacklist_command.Flags().StringSliceVarP(&blacklist_add, "add", "a", nil, "Add an item to the blacklist")
+	blacklist_command.Flags().StringSliceVarP(&blacklist_remove, "remove", "r", nil, "Remove an item from the blacklist")
 	config_command.AddCommand(blacklist_command)
 
-	output_directory_command.Flags().StringVarP(&set_output_dir, "directory", "d", "", "Set the default output directory")
-	output_directory_command.Flags().StringVarP(&set_output_filename, "filename", "f", "", "Set the default output filename")
-	output_directory_command.Flags().StringVarP(&set_output_path, "path", "p", "", "Set the default output path")
-	config_command.AddCommand(output_directory_command)
+	set_output_command.Flags().StringVarP(&set_output_dir, "directory", "d", "", "Set the default output directory")
+	set_output_command.Flags().StringVarP(&set_output_filename, "filename", "f", "", "Set the default output filename")
+	set_output_command.Flags().StringVarP(&set_output_path, "path", "p", "", "Set the default output path")
+	config_command.AddCommand(set_output_command)
 
 	config_command.AddCommand(git_ignore_command)
 
