@@ -20,6 +20,7 @@ jobs:
             exit 1
           fi
       - name: Build
+        if: startsWith(github.ref, 'refs/tags/')
         run: mkdir ./bin && go build -o ./bin/todor
       - name: Release
         uses: softprops/action-gh-release@v2
