@@ -10,8 +10,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Build
-        run: mkdir ./bin && go build -o ./bin/todor
       - name: PushTag
         run: |
           export VERSION=$(cat ./version)
@@ -21,8 +19,3 @@ jobs:
           fi
           git tag $VERSION &&
           git push origin $VERSION
-          git checkout $VERSION
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: ./bin/todor
