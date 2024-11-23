@@ -1,6 +1,9 @@
 name: Release dist on tag push to from main
 
-on: push
+on: 
+  push:
+    tags:
+      - "v*.*"
 
 jobs:
   build:
@@ -17,6 +20,7 @@ jobs:
 
           if [[ "$THIS_HASH" != "$MAIN_HASH" ]]; then
             echo "Can not release a tag that does not match main"
+            git push --delete origin ${{ github.ref }}
             exit 1
           fi
       - name: Build
