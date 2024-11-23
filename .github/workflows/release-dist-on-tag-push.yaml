@@ -24,8 +24,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           export DEBIAN_FRONTEND=noninteractive
-          apt-get update
-          apt-get -yq install  make
+          sudo apt-get update
+          sudo apt-get -yq install  make
           make build-dist
       - name: Release
         uses: softprops/action-gh-release@v2
