@@ -2,12 +2,12 @@ package configuration
 
 import "slices"
 
-func (cfg *ConfigOptions) AddToWhitelist(group string) error {
-	if slices.Contains(cfg.Whitelist, group) {
+func (cfg *ConfigOptions) AddToWhitelist(item string) error {
+	if slices.Contains(cfg.Whitelist, item) {
 		return nil
 	}
 
-	cfg.Whitelist = append(cfg.Whitelist, group)
+	cfg.Whitelist = append(cfg.Whitelist, item)
 	if err := cfg.saveConfig(); err != nil {
 		return err
 	}
@@ -15,6 +15,16 @@ func (cfg *ConfigOptions) AddToWhitelist(group string) error {
 	return nil
 }
 
-func (cfg *ConfigOptions) RemoveFromWhitelist(group string) error {
+func (cfg *ConfigOptions) RemoveFromWhitelist(item string) error {
+	if !slices.Contains(cfg.Whitelist, item) {
+		return nil
+	}
+
+	index := slices.Index(cfg.Whitelist, item)
+	cfg.Whitelist = append(cfg.Whitelist[:index], cfg.Whitelist[index+1:]...)
+	if err := cfg.saveConfig(); err != nil {
+		return err
+	}
+
 	return nil
 }

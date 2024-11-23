@@ -113,10 +113,8 @@ func getConfigFilePath() (string, error) {
 	switch runtime.GOOS {
 	case "windows":
 		config_dir = filepath.Join(home_dir, "AppData", "Local", "todor")
-		break
 	case "linux":
 		config_dir = filepath.Join(home_dir, ".config", "todor")
-		break
 	case "darwin": // MacOS
 		config_dir = filepath.Join(home_dir, "Library", "Application Support", "todor")
 	default:
