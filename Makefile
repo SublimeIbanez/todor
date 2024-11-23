@@ -6,6 +6,9 @@ run:
 	./bin/todor
 
 
+new-release:
+	./scripts/version-bump.sh
+
 build-dist:
 	OOS=linux GOARCH=amd64 go build -o ./bin/todor-linux-amd64
 	OOS=linux GOARCH=386 go build -o ./bin/todor-linux-386i
