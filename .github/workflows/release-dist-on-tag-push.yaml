@@ -15,6 +15,11 @@ jobs:
           export MAIN_HASH=$(git rev-parse main)
           export THIS_HASH=$(git rev-parse ${{ github.ref }})
 
+          echo "MAIN HASH $MAIN_HASH"
+          echo "THIS HASH $THIS_HASH"
+
+          echo "this ref ${{ github.ref }}"
+
           if [[ "$THIS_HASH" != "$MAIN_HASH" ]]; then
             echo "Can not release a tag that does not match main"
             git push --delete origin ${{ github.ref }}
