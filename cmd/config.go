@@ -47,7 +47,7 @@ var whitelist_command = &cobra.Command{
 		// TODO: Rework error handling so log.Fatal isn't used all the time
 		if add {
 			for _, item := range whitelist_add {
-				if err := cfg.AddToWhitelist(item); err != nil {
+				if err := cfg.AddItemToWhitelist(item); err != nil {
 					log.Fatalf("Could not add item <%s> to whitelist: %v", item, err)
 				}
 			}
