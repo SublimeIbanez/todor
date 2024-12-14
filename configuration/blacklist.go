@@ -8,11 +8,8 @@ func (cfg *ConfigOptions) AddToBlacklist(item string) error {
 	}
 
 	cfg.Blacklist = append(cfg.Blacklist, item)
-	if err := cfg.saveConfig(); err != nil {
-		return err
-	}
 
-	return nil
+	return cfg.saveConfig()
 }
 
 func (cfg *ConfigOptions) RemoveFromBlacklist(item string) error {
@@ -23,9 +20,11 @@ func (cfg *ConfigOptions) RemoveFromBlacklist(item string) error {
 	index := slices.Index(cfg.Blacklist, item)
 	cfg.Blacklist = append(cfg.Blacklist[:index], cfg.Blacklist[index+1:]...)
 
-	if err := cfg.saveConfig(); err != nil {
-		return err
-	}
+	return cfg.saveConfig()
+}
 
-	return nil
+func (cfg *ConfigOptions) ResetBlacklist() error {
+	cfg.Blacklist = []string{}
+
+	return cfg.saveConfig()
 }

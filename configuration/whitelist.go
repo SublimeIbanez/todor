@@ -8,11 +8,8 @@ func (cfg *ConfigOptions) AddItemToWhitelist(item string) error {
 	}
 
 	cfg.Whitelist = append(cfg.Whitelist, item)
-	if err := cfg.saveConfig(); err != nil {
-		return err
-	}
 
-	return nil
+	return cfg.saveConfig()
 }
 
 func (cfg *ConfigOptions) RemoveFromWhitelist(item string) error {
@@ -22,9 +19,12 @@ func (cfg *ConfigOptions) RemoveFromWhitelist(item string) error {
 
 	index := slices.Index(cfg.Whitelist, item)
 	cfg.Whitelist = append(cfg.Whitelist[:index], cfg.Whitelist[index+1:]...)
-	if err := cfg.saveConfig(); err != nil {
-		return err
-	}
 
-	return nil
+	return cfg.saveConfig()
+}
+
+func (cfg *ConfigOptions) ResetWhitelist() error {
+	cfg.Whitelist = []string{}
+
+	return cfg.saveConfig()
 }

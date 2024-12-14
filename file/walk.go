@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/SublimeIbanez/todor/common"
-	"github.com/go-git/go-git/v5"
+	"github.com/boyter/gocodewalker"
 )
 
 var buffer = make([]byte, 0, 64*1024)
@@ -18,87 +17,37 @@ const buffer_size int = 1024 * 1024
 
 // Recursively walk through the directory and read through all items
 func (parser *Parser) WalkDir(input_path string) error {
-	input, err := os.Stat(input_path)
+	_, err := os.Stat(input_path)
 	if err != nil {
 		return err
 	}
 
-	full_path, err := filepath.Abs(input_path)
-	if err != nil {
-		return err
+	fileListQueue := make(chan *gocodewalker.File, 100)
+
+	fileWalker := gocodewalker.NewFileWalker(input_path, fileListQueue)
+	fileWalker.IgnoreGitIgnore = !(*parser.Config.Gitignore)
+	fileWalker.AllowListExtensions = append(fileWalker.AllowListExtensions, parser.Config.Whitelist...)
+
+	// TODO: Fix blacklist implementation
+	fileWalker.LocationExcludePattern = append(fileWalker.LocationExcludePattern, parser.Config.Blacklist...)
+
+	errorHandler := func(e error) bool {
+		return true
 	}
+	fileWalker.SetErrorHandler(errorHandler)
 
-	ignore_list := parser.Config.Blacklist
-	// Find .gitgnore if UseGitIgnore from the config file is correct -- extract into ignore files
-	if *parser.Config.Gitignore {
-		filepath.WalkDir(full_path, func(path string, d os.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-
-			if d.Name() == string(common.GIT_IGNORE) {
-				file, e := os.OpenFile(path, os.O_RDONLY, fs.FileMode(common.DEFAULT_FILE_PERMISSIONS))
-				if e != nil {
-					return e
-				}
-
-				scanner := bufio.NewScanner(file)
-				scanner.Buffer(buffer, buffer_size)
-
-				for scanner.Scan() {
-					line := strings.TrimSpace(scanner.Text())
-
-					// Ignore comments
-					if len(line) == 0 || strings.HasPrefix(line, string(common.GIT_IGNORE_COMMENT_PREFIX)) {
-						continue
-					}
-
-					// TODO: Handle `*` properly
-					ignore_list = append(ignore_list, strings.Replace(line, "*", "", -1))
-				}
-
-				file.Close()
-				return scanner.Err()
-			}
-
-			return nil
-		})
-	}
-	fmt.Println(ignore_list)
-
-	if input.IsDir() {
-		err = filepath.WalkDir(full_path, func(path string, d os.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-
-			marked_ignore := true
-			if len(ignore_list) > 0 {
-				for _, ignore := range ignore_list {
-					if strings.Contains(path, ignore) {
-						marked_ignore = true
-					}
-				}
-			}
-
-			if !d.IsDir() && !marked_ignore && len(parser.Config.Whitelist) > 0 {
-				for _, allowed := range parser.Config.Whitelist {
-					if strings.Contains(path, allowed) {
-						if e := parser.readFile(path); e != nil {
-							return fmt.Errorf("could not read file at <%s>: %v", path, e)
-						}
-					}
-				}
-			}
-
-			return nil
-		})
-		if err != nil {
-			return fmt.Errorf("error walking the directory: %v", err)
-		}
-	} else {
-		if err := parser.readFile(full_path); err != nil {
+	go func() error {
+		if err = fileWalker.Start(); err != nil {
 			return err
+		}
+		return nil
+	}()
+
+	for f := range fileListQueue {
+		fmt.Println(f.Location)
+
+		if e := parser.readFile(f.Location); e != nil {
+			return fmt.Errorf("could not read file at <%s>: %v", f.Location, e)
 		}
 	}
 
