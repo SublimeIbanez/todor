@@ -138,9 +138,9 @@ var git_ignore_command = &cobra.Command{
 
 // Output Path *********************************************
 var (
-	set_output_path     string
-	set_output_dir      string
-	set_output_filename string
+	set_output_path      string
+	set_output_directory string
+	set_output_filename  string
 )
 var set_output_command = &cobra.Command{
 	Use:     "output",
@@ -148,7 +148,7 @@ var set_output_command = &cobra.Command{
 	Args:    cobra.NoArgs,
 	Aliases: []string{"out"},
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(set_output_path) == 0 && len(set_output_dir) == 0 && len(set_output_filename) == 0 {
+		if len(set_output_path) == 0 && len(set_output_directory) == 0 && len(set_output_filename) == 0 {
 			log.Fatal("Path cannot be empty")
 		}
 
@@ -165,10 +165,10 @@ var set_output_command = &cobra.Command{
 			log.Fatalf("Setting the output path is currently under development")
 		} else {
 			if handle_output_dir {
-				if err = cfg.SetOutputDirectory(set_output_dir); err != nil {
+				if err = cfg.SetOutputDirectory(set_output_directory); err != nil {
 					log.Fatalf("Could not set output directory: %v", err)
 				}
-				fmt.Printf("Successfully set output directory: %s\n", set_output_dir)
+				fmt.Printf("Successfully set output directory: %s\n", set_output_directory)
 			}
 
 			if handle_output_filename {
@@ -192,7 +192,7 @@ func init() {
 	blacklist_command.Flags().StringSliceVarP(&blacklist_remove, "remove", "r", nil, "Remove an item from the blacklist")
 	config_command.AddCommand(blacklist_command)
 
-	set_output_command.Flags().StringVarP(&set_output_dir, "directory", "d", "", "Set the default output directory")
+	set_output_command.Flags().StringVarP(&set_output_directory, "directory", "d", "", "Set the default output directory")
 	set_output_command.Flags().StringVarP(&set_output_filename, "filename", "f", "", "Set the default output filename")
 	set_output_command.Flags().StringVarP(&set_output_path, "path", "p", "", "Set the default output path")
 	config_command.AddCommand(set_output_command)
