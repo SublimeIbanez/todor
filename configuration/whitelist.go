@@ -2,7 +2,7 @@ package configuration
 
 import "slices"
 
-func (cfg *ConfigOptions) AddToWhitelist(item string) error {
+func (cfg *ConfigOptions) AddItemToWhitelist(item string) error {
 	if slices.Contains(cfg.Whitelist, item) {
 		return nil
 	}

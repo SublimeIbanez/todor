@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/SublimeIbanez/todor/common"
+	"github.com/go-git/go-git/v5"
 )
 
 var buffer = make([]byte, 0, 64*1024)
