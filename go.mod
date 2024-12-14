@@ -1,6 +1,6 @@
 module github.com/SublimeIbanez/todor
 
-go 1.23.1
+go 1.22
 
 require (
 	github.com/boyter/gocodewalker v1.3.5
