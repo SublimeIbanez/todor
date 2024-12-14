@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/SublimeIbanez/todor/common"
+	"github.com/SublimeIbanez/todor/configuration"
 )
 
 // TODO: Create a config file and have these constants placed there
@@ -22,22 +23,22 @@ type Parser struct {
 	Context    context.Context
 	Cancel     context.CancelFunc
 	WaitGroup  sync.WaitGroup
-	Cfg        common.ConfigOptions
+	Config     configuration.ConfigOptions
 }
 
 // Generates a new parser to manage i/o of the requisite data. Returns error if file operations fail
 func NewParser(output_path string) (*Parser, error) {
-	var cfg common.ConfigOptions
+	var cfg configuration.ConfigOptions
 	var output_file *os.File
 	var err error
 
-	cfg, err = common.LoadConfig()
+	cfg, err = configuration.LoadConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load configuration: %w", err)
 	}
 
 	if len(output_path) == 0 {
-		output_dir, err := filepath.Abs(cfg.DefaultOutputDir)
+		output_dir, err := filepath.Abs(cfg.OutputDirectory)
 		if err != nil {
 			return nil, err
 		}
@@ -81,58 +82,58 @@ func NewParser(output_path string) (*Parser, error) {
 		OutputFile: output_file,
 		Context:    context,
 		Cancel:     cancel,
-		Cfg:        cfg,
+		Config:     cfg,
 	}
-	waiting := parser.init()
-	parser.WaitGroup.Add(waiting)
+	parser.init()
 
 	return &parser, nil
 }
 
-func (parser *Parser) init() int {
+func (parser *Parser) init() {
 	// Input the count of goroutines created in init for adding to the wait group
 	goroutines := 2
+	parser.WaitGroup.Add(goroutines)
 
 	go parser.handleInput()
 	go parser.handleOutput()
-
-	return goroutines
 }
 
 // Handles formatting the requisite data
 func (parser *Parser) handleInput() {
 	defer parser.WaitGroup.Done()
+
 	for input := range parser.Input {
 		select {
 		case <-parser.Context.Done():
+			close(parser.Output)
 			return
 
 		default:
 			parser.Output <- fmt.Sprintf("[%s](%s)\n- %s\n\n", input.RelativePath, input.RelativePath, strings.Join(input.ToDo, "\n- "))
 		}
 	}
+	close(parser.Output)
 }
 
 // Handles outputing the formatted data to the output file
 func (parser *Parser) handleOutput() {
 	defer parser.WaitGroup.Done()
-	for output := range parser.Output {
-		select {
-		case <-parser.Context.Done():
-			return
 
-		default:
-			output_data := []byte(output)
-			parser.OutputFile.Write(output_data)
+	for output := range parser.Output {
+
+		fmt.Println(output)
+		_, err := parser.OutputFile.Write([]byte(output))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to write to output file: %v\n", err)
+			return
 		}
 	}
 }
 
 func (parser *Parser) Shutdown() {
-	parser.Cancel()
-
 	close(parser.Input)
-	close(parser.Output)
+	parser.WaitGroup.Wait()
+
 	if parser.OutputFile != nil {
 		parser.OutputFile.Close()
 	}

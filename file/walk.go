@@ -5,45 +5,43 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/SublimeIbanez/todor/common"
+	"github.com/boyter/gocodewalker"
 )
 
 // Recursively walk through the directory and read through all items
 func (parser *Parser) WalkDir(input_path string) error {
-	defer parser.Context.Done()
-	input, err := os.Stat(input_path)
+	_, err := os.Stat(input_path)
 	if err != nil {
 		return err
 	}
 
-	full_path, err := filepath.Abs(input_path)
-	if err != nil {
-		return err
+	fileListQueue := make(chan *gocodewalker.File, 100)
+
+	fileWalker := gocodewalker.NewFileWalker(input_path, fileListQueue)
+	fileWalker.IgnoreGitIgnore = !(*parser.Config.Gitignore)
+	fileWalker.AllowListExtensions = append(fileWalker.AllowListExtensions, parser.Config.Whitelist...)
+
+	// TODO: Fix blacklist implementation
+	fileWalker.LocationExcludePattern = append(fileWalker.LocationExcludePattern, parser.Config.Blacklist...)
+
+	errorHandler := func(e error) bool {
+		return true
 	}
+	fileWalker.SetErrorHandler(errorHandler)
 
-	if input.IsDir() {
-		err = filepath.WalkDir(full_path, func(path string, d os.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-
-			if !d.IsDir() {
-				if err = parser.readFile(path); err != nil {
-					return err
-				}
-			}
-
-			return nil
-		})
-		if err != nil {
-			return fmt.Errorf("error walking the directory: %v", err)
-		}
-	} else {
-		if err := parser.readFile(full_path); err != nil {
+	go func() error {
+		if err = fileWalker.Start(); err != nil {
 			return err
+		}
+		return nil
+	}()
+
+	for f := range fileListQueue {
+		if e := parser.readFile(f.Location); e != nil {
+			return fmt.Errorf("could not read file at <%s>: %v", f.Location, e)
 		}
 	}
 

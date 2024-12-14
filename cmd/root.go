@@ -16,10 +16,9 @@ var output_path string
 
 // root_command represents the base command when called without any subcommands
 var root_command = &cobra.Command{
-	Use:   "",
+	Use:   "todor",
 	Short: "Gathers all TODO's into one easy-to-read markdown file.",
-	Long: `Walks through the provided directory (or starts from root directory if none provided) and searches for all instances
-of "TODO" within any files. Lists these "TODO"s in a markdown file with links to that file.
+	Long: `Walks through the provided directory (or starts from current working directory if none provided) and searches for all instances of "TODO" within any files. Lists these "TODO"s in a markdown file with links to that file.
 
 Example:
     todor -p src -o output.md`,
@@ -31,13 +30,14 @@ Example:
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		defer parser.Shutdown()
 
 		err = parser.WalkDir(input_path)
 		if err != nil {
 			fmt.Println("Could not walk directory or file:", err)
 			os.Exit(1)
 		}
+
+		parser.Shutdown()
 	},
 }
 
@@ -46,6 +46,13 @@ Example:
 func Execute() {
 	err := root_command.Execute()
 	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	err = config_command.Execute()
+	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }
