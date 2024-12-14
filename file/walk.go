@@ -11,10 +11,6 @@ import (
 	"github.com/boyter/gocodewalker"
 )
 
-var buffer = make([]byte, 0, 64*1024)
-
-const buffer_size int = 1024 * 1024
-
 // Recursively walk through the directory and read through all items
 func (parser *Parser) WalkDir(input_path string) error {
 	_, err := os.Stat(input_path)
@@ -44,8 +40,6 @@ func (parser *Parser) WalkDir(input_path string) error {
 	}()
 
 	for f := range fileListQueue {
-		fmt.Println(f.Location)
-
 		if e := parser.readFile(f.Location); e != nil {
 			return fmt.Errorf("could not read file at <%s>: %v", f.Location, e)
 		}
