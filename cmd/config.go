@@ -64,6 +64,34 @@ var whitelist_command = &cobra.Command{
 	},
 }
 
+var whitelist_reset_command = &cobra.Command{
+	Use:     "reset",
+	Short:   "Reset the whitelist",
+	Aliases: []string{"rs"},
+	Args:    cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		cfg, err := configuration.LoadConfig()
+		if err != nil {
+			log.Fatalf("Could not load configuration: %s", err.Error())
+		}
+		cfg.ResetWhitelist()
+	},
+}
+
+var whitelist_print_command = &cobra.Command{
+	Use:     "print",
+	Short:   "Prints the whitelist",
+	Aliases: []string{"p"},
+	Args:    cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		cfg, err := configuration.LoadConfig()
+		if err != nil {
+			log.Fatalf("Could not load configuration: %s", err.Error())
+		}
+		fmt.Println(cfg.Whitelist)
+	},
+}
+
 // Blacklist ***********************************************
 var (
 	blacklist_add    []string
@@ -106,6 +134,34 @@ var blacklist_command = &cobra.Command{
 	},
 }
 
+var blacklist_reset_command = &cobra.Command{
+	Use:     "reset",
+	Short:   "Reset the blacklist",
+	Aliases: []string{"rs"},
+	Args:    cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		cfg, err := configuration.LoadConfig()
+		if err != nil {
+			log.Fatalf("Could not load configuration: %s", err.Error())
+		}
+		cfg.ResetBlacklist()
+	},
+}
+
+var blacklist_print_command = &cobra.Command{
+	Use:     "print",
+	Short:   "Prints the blacklist",
+	Aliases: []string{"p"},
+	Args:    cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		cfg, err := configuration.LoadConfig()
+		if err != nil {
+			log.Fatalf("Could not load configuration: %s", err.Error())
+		}
+		fmt.Println(cfg.Blacklist)
+	},
+}
+
 // Git Ignore **********************************************
 var git_ignore_command = &cobra.Command{
 	Use:     "gitignore [true|false]",
@@ -142,6 +198,7 @@ var (
 	set_output_directory string
 	set_output_filename  string
 )
+
 var set_output_command = &cobra.Command{
 	Use:     "output",
 	Short:   "Set the default output path, directory, and/or filename",
@@ -186,10 +243,14 @@ var set_output_command = &cobra.Command{
 func init() {
 	whitelist_command.Flags().StringSliceVarP(&whitelist_add, "add", "a", nil, "Add an item to the whitelist")
 	whitelist_command.Flags().StringSliceVarP(&whitelist_remove, "remove", "r", nil, "Remove an item from the whitelist")
+	whitelist_command.AddCommand(whitelist_reset_command)
+	whitelist_command.AddCommand(whitelist_print_command)
 	config_command.AddCommand(whitelist_command)
 
 	blacklist_command.Flags().StringSliceVarP(&blacklist_add, "add", "a", nil, "Add an item to the blacklist")
 	blacklist_command.Flags().StringSliceVarP(&blacklist_remove, "remove", "r", nil, "Remove an item from the blacklist")
+	blacklist_command.AddCommand(blacklist_reset_command)
+	blacklist_command.AddCommand(blacklist_print_command)
 	config_command.AddCommand(blacklist_command)
 
 	set_output_command.Flags().StringVarP(&set_output_directory, "directory", "d", "", "Set the default output directory")

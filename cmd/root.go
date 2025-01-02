@@ -49,12 +49,6 @@ func Execute() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
-	err = config_command.Execute()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
 }
 
 func init() {
