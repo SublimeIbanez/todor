@@ -120,8 +120,6 @@ func (parser *Parser) handleOutput() {
 	defer parser.WaitGroup.Done()
 
 	for output := range parser.Output {
-
-		fmt.Println(output)
 		_, err := parser.OutputFile.Write([]byte(output))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to write to output file: %v\n", err)
